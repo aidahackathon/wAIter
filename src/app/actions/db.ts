@@ -1,8 +1,10 @@
-﻿"use server";
+"use server";
 import fs from "fs";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "incidents_db.json");
+const DB_PATH = process.env.NODE_ENV === "production" 
+  ? "/tmp/incidents_db.json" 
+  : path.join(process.cwd(), "incidents_db.json");
 
 if (!fs.existsSync(DB_PATH)) {
   fs.writeFileSync(DB_PATH, JSON.stringify([]), "utf-8");
