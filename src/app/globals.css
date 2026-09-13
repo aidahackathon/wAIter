@@ -1,29 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  /* Apple Light Mode Palette */
-  --background: #F5F5F7; /* Apple's standard light grey backdrop */
-  --foreground: #1D1D1F; /* Apple's off-black text */
+  /* Премиальная светлая палитра (в стиле Vercel/Linear) */
+  --background: #FAFAFA; /* Очень мягкий светло-серый */
+  --foreground: #0F172A; /* Глубокий темно-синий/грифельный (Slate-900) */
   
-  --card-bg: rgba(255, 255, 255, 0.7);
-  --card-border: rgba(255, 255, 255, 0.5);
+  --card-bg: #FFFFFF;
+  --card-border: #E2E8F0; /* Slate-200 */
   
-  --primary-blue: #0071E3; /* Apple Blue */
-  --primary-blue-hover: #0077ED;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Apple Dark Mode Palette */
-    --background: #000000;
-    --foreground: #F5F5F7;
-
-    --card-bg: rgba(28, 28, 30, 0.7);
-    --card-border: rgba(255, 255, 255, 0.1);
-    
-    --primary-blue: #0A84FF;
-    --primary-blue-hover: #409CFF;
-  }
+  --primary-blue: #2563EB; /* Blue-600 */
+  --primary-blue-hover: #1D4ED8; /* Blue-700 */
 }
 
 @theme inline {
@@ -33,7 +19,7 @@
   --color-card-border: var(--card-border);
   --color-primary: var(--primary-blue);
   --color-primary-hover: var(--primary-blue-hover);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -44,14 +30,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism utilities */
+/* Vercel/Linear style cards */
 .glass {
   background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--card-border);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.shadow-apple {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+.shadow-premium {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.shadow-button {
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+}
+
+.shadow-button:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Элегантный точечный паттерн вместо грубой сетки */
+.bg-dots {
+  background-image: radial-gradient(circle, #CBD5E1 1px, transparent 1px);
+  background-size: 32px 32px;
 }

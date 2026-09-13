@@ -1,114 +1,79 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, Shield, Zap, Droplet } from "lucide-react";
+import { User, Wrench, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
-import IncidentReporter from "@/components/IncidentReporter";
+const springConfig = { type: "spring" as const, stiffness: 400, damping: 30 };
 
-const STAGGER_DELAY = 0.1;
-
-// Apple-style spring animation config
-const springConfig = {
-  type: "spring",
-  stiffness: 260,
-  damping: 20,
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: springConfig 
-  },
-};
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: STAGGER_DELAY,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-export default function Home() {
+export default function RoleSelection() {
   return (
-    <main className="flex-1 flex flex-col items-center p-6 md:p-12 lg:p-24 overflow-hidden relative">
-      {/* Subtle Background Gradients */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-400/20 rounded-full blur-[120px] pointer-events-none" />
+    <main className="flex-1 flex flex-col items-center justify-center p-6 min-h-screen relative bg-dots">
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-white/80 to-transparent pointer-events-none" />
 
       <motion.div 
-        className="max-w-5xl w-full flex flex-col items-center relative z-10"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={springConfig}
+        className="max-w-2xl w-full flex flex-col items-center z-10 text-center"
       >
-        {/* Header Section */}
-        <motion.div variants={itemVariants} className="text-center mb-12 max-w-2xl">
-          <motion.div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass shadow-sm mb-6 text-sm font-medium text-primary"
-            whileHover={{ scale: 1.05 }}
-            transition={springConfig}
-          >
-            <Sparkles size={16} />
-            <span>AI Leak Detection</span>
-          </motion.div>
-          <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-6 text-foreground">
-            Report incidents.<br />
-            <span className="text-primary">Instantly.</span>
-          </h1>
-          <p className="text-lg md:text-xl text-foreground/70 leading-relaxed font-medium">
-            Upload a photo of suspected water leaks. Our advanced AI will instantly analyze the probability and scale of the incident.
-          </p>
-        </motion.div>
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white text-blue-600 mb-8 border border-slate-200 shadow-sm">
+          <DropletIcon />
+        </div>
+        
+        <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter mb-4 text-slate-900 leading-[1.1]">
+          wAIter
+        </h1>
+        <p className="text-lg md:text-xl text-slate-500 mb-12 max-w-md font-normal">
+          Платформа для мониторинга утечек и экономии водных ресурсов.
+        </p>
 
-        {/* AI Upload Component */}
-        <motion.div variants={itemVariants} className="w-full z-20">
-          <IncidentReporter />
-        </motion.div>
-
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-12 max-w-3xl mx-auto">
-          
-          {/* Square Card 1 */}
-          <motion.div 
-            variants={itemVariants}
-            className="glass rounded-3xl p-8 shadow-apple flex flex-col justify-between min-h-[240px]"
-            whileHover={{ y: -4, scale: 1.01 }}
-            transition={springConfig}
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6">
-                <Shield size={24} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-xl">
+          {/* Роль: Житель */}
+          <Link href="/report">
+            <motion.div 
+              whileHover={{ y: -4, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center gap-4 cursor-pointer border border-slate-200 shadow-sm hover:shadow-md transition-all group"
+            >
+              <div className="w-16 h-16 rounded-full bg-slate-50 text-slate-900 flex items-center justify-center border border-slate-100 group-hover:bg-slate-100 transition-colors">
+                <User size={32} />
               </div>
-              <h2 className="text-2xl font-semibold mb-2">Secure</h2>
-              <p className="text-foreground/70 font-medium">Your data stays yours. Privacy is built-in from the ground up.</p>
-            </div>
-          </motion.div>
-
-          {/* Square Card 2 */}
-          <motion.div 
-            variants={itemVariants}
-            className="glass rounded-3xl p-8 shadow-apple flex flex-col justify-between min-h-[240px]"
-            whileHover={{ y: -4, scale: 1.01 }}
-            transition={springConfig}
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-6">
-                <Droplet size={24} />
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-slate-900 mb-1">Я — Житель</h2>
+                <p className="text-sm text-slate-500">Сообщить об утечке воды</p>
               </div>
-              <h2 className="text-2xl font-semibold mb-2">Fluid Design</h2>
-              <p className="text-foreground/70 font-medium">Smooth spring physics and soft transitions. Pure HIG aesthetic.</p>
-            </div>
-          </motion.div>
+              <ArrowRight className="text-slate-400 group-hover:text-blue-600 transition-colors mt-2" />
+            </motion.div>
+          </Link>
 
+          {/* Роль: Ремонтник */}
+          <Link href="/admin">
+            <motion.div 
+              whileHover={{ y: -4, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center gap-4 cursor-pointer border border-slate-200 shadow-sm hover:shadow-md transition-all group"
+            >
+              <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition-colors">
+                <Wrench size={32} />
+              </div>
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-slate-900 mb-1">Я — Ремонтник</h2>
+                <p className="text-sm text-slate-500">Панель управления заявками</p>
+              </div>
+              <ArrowRight className="text-slate-400 group-hover:text-blue-600 transition-colors mt-2" />
+            </motion.div>
+          </Link>
         </div>
       </motion.div>
     </main>
+  );
+}
+
+function DropletIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+    </svg>
   );
 }

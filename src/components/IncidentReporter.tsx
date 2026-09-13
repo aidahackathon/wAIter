@@ -2,10 +2,10 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Loader2, AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { Camera, Loader2, AlertCircle, CheckCircle2, ScanSearch } from "lucide-react";
 import { analyzeIncident, type AnalyzeResult } from "@/app/actions/analyze";
 
-const springConfig = { type: "spring", stiffness: 300, damping: 25 };
+const springConfig = { type: "spring" as const, stiffness: 400, damping: 30 };
 
 export default function IncidentReporter() {
   const [file, setFile] = useState<File | null>(null);
@@ -19,11 +19,12 @@ export default function IncidentReporter() {
     if (selected) {
       setFile(selected);
       setPreviewURL(URL.createObjectURL(selected));
-      setResult(null); // Сбрасываем прошлый результат
+      setResult(null); 
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!file) return;
     
     setIsAnalyzing(true);
@@ -32,9 +33,49 @@ export default function IncidentReporter() {
     const formData = new FormData();
     formData.append("file", file);
 
+    let lat = 0;
+    let lng = 0;
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+      });
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+      formData.append("lat", lat.toString());
+      formData.append("lng", lng.toString());
+    } catch (geoError) {
+      console.warn("Геолокация недоступна", geoError);
+    }
+
     try {
       const aiResult = await analyzeIncident(formData);
       setResult(aiResult);
+
+      // Сохраняем в localStorage для Дашборда Ремонтника
+      if (!aiResult.error) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = e.target?.result as string;
+          const newIncident = {
+            id: `REQ-${Math.floor(100 + Math.random() * 900)}`,
+            address: lat && lng ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : "Локация неизвестна",
+            lat: lat,
+            lng: lng,
+            scale: aiResult.scale,
+            probability: aiResult.probability,
+            status: "Новая",
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            img: base64
+          };
+          
+          // Сохраняем заявку на сервере
+          const { saveIncident } = await import('@/app/actions/db');
+          await saveIncident(newIncident);
+        };
+        reader.readAsDataURL(file);
+      }
+
     } catch (error) {
       console.error(error);
     } finally {
@@ -43,144 +84,190 @@ export default function IncidentReporter() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-8 flex flex-col gap-6">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
       
-      {/* Upload Zone */}
+      {/* Премиальная зона загрузки (Linear/Vercel style) */}
       <motion.div 
         className="relative group cursor-pointer"
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+        whileTap={{ scale: 0.995 }}
         transition={springConfig}
         onClick={() => !isAnalyzing && fileInputRef.current?.click()}
       >
         <div className={`
-          absolute inset-0 rounded-3xl transition-opacity duration-300 pointer-events-none
-          ${isAnalyzing ? 'opacity-100 bg-primary/20 blur-xl animate-pulse' : 'opacity-0'}
-        `} />
-        
-        <div className="glass rounded-3xl p-8 shadow-apple border border-white/20 dark:border-white/5 relative overflow-hidden flex flex-col items-center justify-center min-h-[240px] text-center">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileSelect} 
-            accept="image/*" 
-            className="hidden" 
-          />
-          
-          <AnimatePresence mode="wait">
-            {previewURL ? (
-              <motion.div 
-                key="preview"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="absolute inset-0 w-full h-full"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={previewURL} alt="Preview" className="w-full h-full object-cover opacity-60" />
-                <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
-                
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {!isAnalyzing ? (
-                    <motion.button 
-                      onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
-                      className="px-6 py-3 bg-primary text-white rounded-full font-medium shadow-lg hover:bg-primary-hover flex items-center gap-2"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+          bg-white rounded-3xl p-2 shadow-sm border-2 border-dashed transition-colors duration-200
+          ${isAnalyzing ? 'border-slate-200' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}
+        `}>
+          <div className="relative overflow-hidden rounded-2xl flex flex-col items-center justify-center min-h-[320px] text-center bg-slate-50/50">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileSelect} 
+              accept="image/*" 
+              capture="environment" /* Открывает камеру на телефоне */
+              className="hidden" 
+            />
+            
+            <AnimatePresence mode="wait">
+              {previewURL ? (
+                <motion.div 
+                  key="preview"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 w-full h-full"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={previewURL} alt="Предпросмотр" className="w-full h-full object-cover" />
+                  
+                  {/* Кнопка отмены (удалить выбранное фото до анализа) */}
+                  {!isAnalyzing && !result && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFile(null);
+                        setPreviewURL(null);
+                        setResult(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                      className="absolute top-4 right-4 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-md text-white rounded-full flex items-center justify-center transition-colors"
+                      title="Удалить фото"
                     >
-                      <Upload size={18} />
-                      Analyze with AI
-                    </motion.button>
-                  ) : (
-                    <div className="flex items-center gap-3 px-6 py-3 bg-white/20 backdrop-blur-md text-white rounded-full font-medium shadow-lg">
-                      <Loader2 size={18} className="animate-spin" />
-                      Analyzing...
-                    </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
                   )}
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div 
-                key="placeholder"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-4 text-foreground/60"
-              >
-                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Upload size={28} />
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-foreground">Upload photo of a leak</p>
-                  <p className="text-sm">Tap or drag an image here</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+                  {/* Bounding Box (разметка ИИ) */}
+                  {result?.box_2d && result.box_2d[2] > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute border-4 border-red-500 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.5)] flex flex-col justify-start"
+                      style={{
+                        top: `${result.box_2d[0]}%`,
+                        left: `${result.box_2d[1]}%`,
+                        height: `${result.box_2d[2] - result.box_2d[0]}%`,
+                        width: `${result.box_2d[3] - result.box_2d[1]}%`,
+                      }}
+                    >
+                      <div className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 absolute -top-5 left-[-4px] whitespace-nowrap">
+                        Обнаружена аномалия ({result.probability}%)
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Мягкий градиент внизу для читаемости кнопки */}
+                  <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-slate-900/60 to-transparent pointer-events-none" />
+                  
+                  <div className="absolute inset-0 flex items-end justify-center pb-8">
+                    {!isAnalyzing ? (
+                      <motion.button 
+                        onClick={handleAnalyze}
+                        className="px-6 py-3 bg-slate-900 text-white rounded-full font-medium shadow-button transition-all flex items-center gap-2 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.96 }}
+                      >
+                        <ScanSearch size={18} />
+                        Анализировать нейросетью
+                      </motion.button>
+                    ) : (
+                      <div className="flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-slate-900 rounded-full font-medium shadow-sm border border-slate-200">
+                        <Loader2 size={16} className="animate-spin text-blue-600" />
+                        Анализ данных...
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="placeholder"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center gap-3 text-slate-500"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-white text-slate-400 flex items-center justify-center border border-slate-200 shadow-sm mb-2 group-hover:text-slate-600 transition-colors">
+                    <Camera size={20} />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-slate-900 mb-0.5">Сделать фото</p>
+                    <p className="text-sm">Нажмите, чтобы открыть камеру или выбрать файл</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
 
-      {/* AI Result Card */}
+      {/* Строгая карточка результата */}
       <AnimatePresence>
         {result && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={springConfig}
-            className="glass rounded-3xl p-6 shadow-apple overflow-hidden"
+            className="bg-white rounded-2xl p-6 shadow-premium border border-slate-200"
           >
             {result.error ? (
-              <div className="flex items-start gap-3 text-red-500">
-                <AlertCircle className="shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 text-red-600">
+                <AlertCircle className="shrink-0 mt-0.5" size={20} />
                 <div>
-                  <h3 className="font-semibold">Analysis Failed</h3>
-                  <p className="text-sm opacity-80">{result.error}</p>
+                  <h3 className="font-semibold text-sm">Ошибка анализа</h3>
+                  <p className="text-sm opacity-90 mt-1">{result.error}</p>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-4">
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center">
-                      <CheckCircle2 size={20} />
+                    <div className="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center border border-green-100">
+                      <CheckCircle2 size={16} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">AI Analysis Complete</h3>
-                      <p className="text-sm text-foreground/60">Powered by Gemini 1.5</p>
+                      <h3 className="font-semibold text-slate-900 text-sm">Анализ завершён</h3>
+                      <p className="text-xs text-slate-500">Gemini 3.5 Flash</p>
                     </div>
                   </div>
                   
-                  <div className="text-right">
-                    <div className="text-3xl font-bold tracking-tight text-primary">
-                      {result.probability}%
+                  <div className="text-right flex items-center gap-3">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Вероятность
                     </div>
-                    <div className="text-xs font-medium uppercase tracking-wider text-foreground/50">
-                      Probability
+                    <div className="text-3xl font-bold tracking-tight text-blue-600">
+                      {result.probability}%
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/40 dark:bg-black/20 rounded-2xl p-4">
-                    <div className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-1">Scale</div>
-                    <div className="font-semibold text-foreground">{result.scale}</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 md:col-span-1">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Уровень риска</div>
+                    <div className="font-semibold text-slate-900">{result.scale}</div>
                   </div>
-                  <div className="bg-white/40 dark:bg-black/20 rounded-2xl p-4 col-span-2">
-                    <div className="flex items-start gap-2">
-                      <Info size={16} className="text-primary shrink-0 mt-1" />
-                      <div>
-                        <div className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-1">AI Report</div>
-                        <p className="text-sm text-foreground leading-relaxed">{result.description}</p>
-                      </div>
-                    </div>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 md:col-span-2">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Вердикт Нейросети</div>
+                    <p className="text-sm text-slate-700 leading-relaxed">{result.description}</p>
                   </div>
+                </div>
+
+                <div className="pt-2">
+                  <button 
+                    onClick={() => {
+                      setFile(null);
+                      setPreviewURL(null);
+                      setResult(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-medium transition-colors"
+                  >
+                    Сделать новое фото
+                  </button>
                 </div>
               </div>
             )}
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
