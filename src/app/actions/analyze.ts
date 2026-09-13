@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({});
 
 // Telegram Данные (из промпта)
 const TG_BOT_TOKEN = "8978813676:AAF12F_6b3LTcvzJ9i6wSK4cPnSL8WwisME";
-const TG_CHAT_ID = "5063034532";
+const TG_CHAT_ID = "8866917292";
 
 export interface AnalyzeResult {
   probability: number;
