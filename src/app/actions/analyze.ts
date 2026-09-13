@@ -135,7 +135,7 @@ export async function analyzeIncident(formData: FormData): Promise<AnalyzeResult
           page.drawText(`Вердикт нейросети: ${jsonResult.description}`, { x: 50, y: height - 210, size: 12, font: customFont, maxWidth: 500 });
           
           const pdfBytes = await pdfDoc.save();
-          const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+          const pdfBlob = new Blob([pdfBytes as any], { type: 'application/pdf' });
 
           const docFormData = new FormData();
           docFormData.append("chat_id", TG_CHAT_ID);
