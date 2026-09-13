@@ -103,7 +103,6 @@ export default function IncidentReporter() {
               ref={fileInputRef} 
               onChange={handleFileSelect} 
               accept="image/*" 
-              capture="environment" /* Открывает камеру на телефоне */
               className="hidden" 
             />
             
